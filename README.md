@@ -4,7 +4,7 @@
 
 > **Search – Reason – Cite** with one function call.
 >
-> This library is the *official* Python interface for the [LLMLayer Search & Answer API](https://llmlayer.ai). It lets you send queries to your self‑hosted or cloud instance, receive fully‑reasoned answers, and stream intermediate content in real‑time.
+> This library is the *official* Python interface for the [LLMLayer Search & Answer API](https://llmlayer.ai).
 
 ---
 
@@ -17,7 +17,6 @@
 | ⏱ **Streaming**            | Get partial chunks via Server‑Sent Events; perfect for chat UIs                      |
 | 🛡 **Elegant error model** | `InvalidRequest`, `ProviderError`, `RateLimitError`, … – catch exactly what you need |
 | 🔌 **Dependency‑light**    | Only `httpx` and `pydantic` at runtime                                               |
-| 🧪 **Dev‑friendly**        | Drop‑in scripts (`test.py`, `test_stream.py`) and local import support               |
 
 ---
 
@@ -258,4 +257,4 @@ client = LLMLayerClient(..., client=custom)
 
 ##  License
 
-MIT © 2025 LLMLayer Inc.  Feel free to copy, modify, and distribute.
+MIT © 2025 LLMLayer Inc.
