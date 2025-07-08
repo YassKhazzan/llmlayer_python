@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "llmlayer"
-version = "0.1.1"
+version = "0.1.2"
 description = "Official Python SDK for the LLMLayer Search & Answer API"
 readme = "README.md"
 license = {text = "MIT"}

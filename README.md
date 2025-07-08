@@ -63,9 +63,9 @@ pip install llmlayer
 from llmlayer import LLMLayerClient
 
 client = LLMLayerClient(
-    api_key="<LLMLAYER_KEY>",          # Bearer token
+    api_key="<LLMLAYER_API_KEY>",          # Bearer token
     provider="openai",                  # one of openai|anthropic|gemini|groq|deepseek
-    provider_key="<PROVIDER_API_KEY>", # e.g. your OpenAI key
+    provider_key="<PROVIDER_API_KEY>", # e.g. your OpenAI key or the chosen provider key
 )
 
 resp = client.search(
@@ -89,12 +89,12 @@ async def main():
     client = LLMLayerClient(
         api_key="<LLMLAYER_KEY>",
         provider="anthropic",
-        provider_key="<CLAUDE_KEY>",
+        provider_key="<ANTHROPIC_KEY>",
         base_url="https://api.llmlayer.dev",
     )
     resp = await client.asearch(
         query="List three applications of quantum tunnelling",
-        model="claude-3-sonnet-20240229",
+        model="claude-sonnet-4-20250514",
     )
     print(resp.llm_response)
 
@@ -179,7 +179,7 @@ Below keys map 1‑to‑1 to the backend’s `SearchRequest` schema.
 | `response_language` | `str`                            | `"auto"`    | `"auto"` to detect user language                                                           |
 | `answer_type`       | `"markdown" \| "html" \| "json"` | `markdown`  | Output format                                                                              |
 | `search_type`       | `"general" \| "news"`            | `general`   | Vertical search bias                                                                       |
-| `json_schema`       | `str?`                           |  —          | Required when `answer_type = json`                                                         |
+| `json_schema`       | `str?`                           |  —          | Required when `answer_type = json` json schema the response should follow                  |
 | `citations`         | `bool`                           | `False`     | Embed `[n]` citations into answer                                                          |
 | `return_sources`    | `bool`                           | `False`     | Include `sources` in response                                                              |
 | `return_images`     | `bool`                           | `False`     | Include `images` (if available)                                                            |
