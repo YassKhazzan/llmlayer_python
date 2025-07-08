@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling>=1.23"]
+build-backend = "hatchling.build"
+
+[project]
+name = "llmlayer"
+version = "0.1.1"
+description = "Official Python SDK for the LLMLayer Search & Answer API"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Yassine Khazzan", email = "yassine@llmlayer.ai"}]
+requires-python = ">=3.9"
+dependencies = ["httpx>=0.27", "pydantic>=2.6"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-org/llmlayer-sdk"
+Issues = "https://github.com/your-org/llmlayer-sdk/issues"
+
+[tool.hatch.build.targets.sdist]
+exclude = ["/tests", "/examples", ".*"]
