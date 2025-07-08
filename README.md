@@ -170,25 +170,25 @@ All constructor args override env vars.
 
 Below keys map 1‑to‑1 to the backend’s `SearchRequest` schema.
 
-| Name                | Type                             | Default     | Notes                                                              |
-| ------------------- | -------------------------------- | ----------- |--------------------------------------------------------------------|
-| `query`             | `str`                            | —           | User question / search prompt                                      |
-| `model`             | `str`                            | —           | Provider model name (`gpt-4o-mini`, `claude‑3‑sonnet‑20240229`, …) |
-| `date_context`      | `str?`                           | `None`      | Inject a date string the prompt can reference                      |
-| `location`          | `str`                            | `"us"`      | Geographical search bias                                           |
-| `system_prompt`     | `str?`                           |  —          | Override LLMLayer’s default prompt                                 |
-| `response_language` | `str`                            | `"auto"`    | `"auto"` to detect user language                                   |
-| `answer_type`       | `"markdown" \| "html" \| "json"` | `markdown`  | Output format                                                      |
-| `search_type`       | `"general" \| "news"`            | `general`   | Vertical search bias                                               |
-| `json_schema`       | `str?`                           |  —          | Required when `answer_type = json`                                 |
-| `citations`         | `bool`                           | `False`     | Embed `[n]` citations into answer                                  |
-| `return_sources`    | `bool`                           | `False`     | Include `sources` in response                                      |
-| `return_images`     | `bool`                           | `False`     | Include `images` (if available)                                    |
-| `date_filter`       | `str`                            | `"anytime"` | `hour`, `day`, `week`, `month`, `year`                              |
-| `max_tokens`        | `int`                            | `1500`      | LLM max tokens                                                     |
-| `temperature`       | `float`                          | `0.7`       | Adjust creativity                                                  |
-| `domain_filter`     | `List[str]?`                     |  —          | Restrict organic search domains                                    |
-| `max_queries`       | `int`                            | `1`         | How many search queries LLMLayer should generate                   |
+| Name                | Type                             | Default     | Notes                                                                                      |
+| ------------------- | -------------------------------- | ----------- |--------------------------------------------------------------------------------------------|
+| `query`             | `str`                            | —           | User question / search prompt                                                              |
+| `model`             | `str`                            | —           | Provider model name (`gpt-4o-mini`, `claude‑3‑sonnet‑20240229`, …)                         |
+| `date_context`      | `str?`                           | `None`      | Inject a date string the prompt can reference                                              |
+| `location`          | `str`                            | `"us"`      | Geographical search bias                                                                   |
+| `system_prompt`     | `str?`                           |  —          | Override LLMLayer’s default prompt                                                         |
+| `response_language` | `str`                            | `"auto"`    | `"auto"` to detect user language                                                           |
+| `answer_type`       | `"markdown" \| "html" \| "json"` | `markdown`  | Output format                                                                              |
+| `search_type`       | `"general" \| "news"`            | `general`   | Vertical search bias                                                                       |
+| `json_schema`       | `str?`                           |  —          | Required when `answer_type = json`                                                         |
+| `citations`         | `bool`                           | `False`     | Embed `[n]` citations into answer                                                          |
+| `return_sources`    | `bool`                           | `False`     | Include `sources` in response                                                              |
+| `return_images`     | `bool`                           | `False`     | Include `images` (if available)                                                            |
+| `date_filter`       | `str`                            | `"anytime"` | `hour`, `day`, `week`, `month`, `year`                                                     |
+| `max_tokens`        | `int`                            | `1500`      | LLM max tokens                                                                             |
+| `temperature`       | `float`                          | `0.7`       | Adjust creativity                                                                          |
+| `domain_filter`     | `List[str]?`                     |  —          | list of domains `["nytimes.com","-wikipedia.org]``-`is to exclude a domain from the search |
+| `max_queries`       | `int`                            | `1`         | How many search queries LLMLayer should generate. each query will cost 0,007$              |
 
 ---
 
