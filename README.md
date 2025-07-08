@@ -83,7 +83,7 @@ for src in resp.sources:
 
 ```python
 import asyncio
-from llmlayer_sdk import LLMLayerClient
+from llmlayer import LLMLayerClient
 
 async def main():
     client = LLMLayerClient(
@@ -104,7 +104,7 @@ asyncio.run(main())
 ###  Streaming
 
 ```python
-from llmlayer_sdk import LLMLayerClient
+from llmlayer import LLMLayerClient
 
 client = LLMLayerClient(
     api_key="LLMLAYER_API_KEY",
@@ -194,7 +194,7 @@ Below keys map 1‑to‑1 to the backend’s `SearchRequest` schema.
 ###  Data Models
 
 ```python
-from llmlayer_sdk.models import SearchRequest, SimplifiedSearchResponse
+from llmlayer.models import SearchRequest, SimplifiedSearchResponse
 ```
 
 Both are `pydantic.BaseModel` subclasses – perfect for validation, FastAPI, or serialization.
@@ -203,7 +203,7 @@ Both are `pydantic.BaseModel` subclasses – perfect for validation, FastAPI, or
 
 ##  Error Handling
 
-All exceptions inherit from `llmlayer_sdk.exceptions.LLMLayerError`.
+All exceptions inherit from `llmlayer.exceptions.LLMLayerError`.
 
 | Class                 | Raised When                                    |
 | --------------------- | ---------------------------------------------- |
@@ -216,7 +216,7 @@ All exceptions inherit from `llmlayer_sdk.exceptions.LLMLayerError`.
 Example:
 
 ```python
-from llmlayer_sdk.exceptions import RateLimitError
+from llmlayer.exceptions import RateLimitError
 
 try:
     resp = client.search(...)
@@ -232,7 +232,7 @@ except RateLimitError:
 
 ```python
 import httpx
-from llmlayer_sdk import LLMLayerClient
+from llmlayer import LLMLayerClient
 
 shared = httpx.Client(http2=True, timeout=60)
 client = LLMLayerClient(
