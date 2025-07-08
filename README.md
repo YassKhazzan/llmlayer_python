@@ -1,6 +1,6 @@
 # LLMLayer Python SDK
 
-![PyPI](https://img.shields.io/pypi/v/llmlayer?color=blue) ![Python](https://img.shields.io/pypi/pyversions/llmlayer.svg) ![CI](https://github.com/your-org/llmlayer-sdk/actions/workflows/ci.yml/badge.svg)
+![PyPI](https://img.shields.io/pypi/v/llmlayer?color=blue) ![Python](https://img.shields.io/pypi/pyversions/llmlayer.svg) ![CI](https://github.com/YassKhazzan/llmlayer/actions/workflows/ci.yml/badge.svg)
 
 > **Search – Reason – Cite** with one function call.
 >

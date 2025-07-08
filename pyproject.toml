@@ -18,8 +18,5 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-org/llmlayer-sdk"
-Issues = "https://github.com/your-org/llmlayer-sdk/issues"
-
-[tool.hatch.build.targets.sdist]
-exclude = ["/tests", "/examples", ".*"]
+Homepage = "https://github.com/YassKhazzan/llmlayer_python"
+Issues = "https://github.com/YassKhazzan/llmlayer_python/issues"
