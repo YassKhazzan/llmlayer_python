@@ -48,14 +48,14 @@ class LLMLayerClient:
     """
 
     def __init__(
-        self,
-        *,
-        api_key: str | None = None,
-        provider: str | None = None,
-        provider_key: str | None = None,
-        base_url: str = "https://api.llmlayer.dev",
-        timeout: float | httpx.Timeout = 60.0,
-        client: httpx.Client | None = None,
+            self,
+            *,
+            api_key: str | None = None,
+            provider: str | None = None,
+            provider_key: str | None = None,
+            base_url: str = "https://api.llmlayer.dev",
+            timeout: float | httpx.Timeout = 60.0,
+            client: httpx.Client | None = None,
     ):
         # ---- resolve credentials (explicit > env) -------------------- #
         self.api_key = api_key or os.getenv("LLMLAYER_API_KEY")
@@ -64,9 +64,9 @@ class LLMLayerClient:
 
         self.provider = (provider or os.getenv("LLMLAYER_PROVIDER") or "openai").lower()
         self.provider_key = (
-            provider_key
-            or os.getenv(f"{self.provider.upper()}_API_KEY")
-            or os.getenv("LLMLAYER_PROVIDER_KEY")
+                provider_key
+                or os.getenv(f"{self.provider.upper()}_API_KEY")
+                or os.getenv("LLMLAYER_PROVIDER_KEY")
         )
         if not self.provider_key:
             raise AuthenticationError(
@@ -77,9 +77,12 @@ class LLMLayerClient:
         self.base_url = base_url.rstrip("/")
         self._timeout = timeout
         self._external_client = client
+        if client and not isinstance(client, httpx.Client):
+            raise TypeError("`client` must be an instance of httpx.Client")
+
         self._client = client or httpx.Client(
             timeout=timeout,
-            headers={"Authorization": f"Bearer {self.api_key}", "User-Agent": f"llmlayer-sdk/{__version__}"},
+            headers={"Authorization": f"Bearer {self.api_key}", "User-Agent": f"llmlayer/{__version__}"},
         )
 
     # ----------------- public ---------------------------------------- #
@@ -164,10 +167,15 @@ class LLMLayerClient:
     # async client CM
     def _maybe_client(self):
         if self._external_client:
-            return _PassThrough(self._external_client)
+            if isinstance(self._external_client, httpx.AsyncClient):
+                return _PassThrough(self._external_client)
+            raise TypeError(
+                "The `client` passed to LLMLayerClient must be an httpx.AsyncClient "
+                "when calling async APIs (asearch / asearch_stream)."
+            )
         return httpx.AsyncClient(
             timeout=self._timeout,
-            headers={"Authorization": f"Bearer {self.api_key}", "User-Agent": f"llmlayer-sdk/{__version__}"},
+            headers={"Authorization": f"Bearer {self.api_key}", "User-Agent": f"llmlayer/{__version__}"},
         )
 
     # context mgr plumbing
