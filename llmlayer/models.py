@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Union
 from pydantic import BaseModel, Field
 
 
@@ -27,7 +27,7 @@ class SearchRequest(BaseModel):
 
 
 class SimplifiedSearchResponse(BaseModel):
-    llm_response: str
+    llm_response: Union[str, dict]
     response_time: float
     input_tokens: int
     output_tokens: int
