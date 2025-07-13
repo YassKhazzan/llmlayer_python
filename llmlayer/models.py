@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 class SearchRequest(BaseModel):
     # three REQUIRED fields expected in the body
-    provider: Literal["openai", "gemini", "anthropic", "groq", "deepseek"]
+    provider: Literal["openai", "gemini", "anthropic", "groq", "deepseek","grok"]
     provider_key: str
     query: str
     model: str
