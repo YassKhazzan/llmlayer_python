@@ -3,13 +3,12 @@ from pydantic import BaseModel, Field
 
 
 class SearchRequest(BaseModel):
-    # three REQUIRED fields expected in the body
-    provider: Literal["openai", "gemini", "anthropic", "groq", "deepseek","grok"]
-    provider_key: str
+    # REQUIRED fields expected in the body
     query: str
     model: str
 
     # ----- original backend fields -----
+    provider_key: Optional[str] = None
     location: str = "us"
     system_prompt: Optional[str] = None
     response_language: str = "auto"
@@ -33,3 +32,5 @@ class SimplifiedSearchResponse(BaseModel):
     output_tokens: int
     sources: list[dict] = Field(default_factory=list)
     images: list[dict] = Field(default_factory=list)
+    model_cost: Optional[float] = None
+    llmlayer_cost: Optional[float] = None

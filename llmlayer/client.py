@@ -32,8 +32,7 @@ class LLMLayerClient:
 
         client = LLMLayerClient(
             api_key="LLM_API_KEY",
-            provider="openai",
-            provider_key="OPENAI_API_KEY"
+            provider_key="OPENAI_API_KEY" #Optional or groq key or deepseek key
         )
 
     Each parameter can fall back to an env variable:
@@ -41,17 +40,15 @@ class LLMLayerClient:
     | param         | env var                |
     |---------------|------------------------|
     | api_key       | LLMLAYER_API_KEY       |
-    | provider      | LLMLAYER_PROVIDER      |
-    | provider_key  | <PROVIDER>_API_KEY     |
+    | provider_key  | LLMLAYER_PROVIDER_KEY     |
 
-    Example: `OPENAI_API_KEY`, `GEMINI_API_KEY`, …
+    Example: PROVIDER_API_KEY
     """
 
     def __init__(
             self,
             *,
             api_key: str | None = None,
-            provider: str | None = None,
             provider_key: str | None = None,
             base_url: str = "https://api.llmlayer.dev",
             timeout: float | httpx.Timeout = 60.0,
@@ -62,16 +59,12 @@ class LLMLayerClient:
         if not self.api_key:
             raise AuthenticationError("LLMLAYER_API_KEY missing (or api_key not provided)")
 
-        self.provider = (provider or os.getenv("LLMLAYER_PROVIDER") or "openai").lower()
         self.provider_key = (
                 provider_key
-                or os.getenv(f"{self.provider.upper()}_API_KEY")
                 or os.getenv("LLMLAYER_PROVIDER_KEY")
+                or None
         )
-        if not self.provider_key:
-            raise AuthenticationError(
-                f"{self.provider.upper()}_API_KEY missing (or provider_key not provided)"
-            )
+
 
         # ---- http client plumbing ----------------------------------- #
         self.base_url = base_url.rstrip("/")
@@ -128,7 +121,6 @@ class LLMLayerClient:
     # ----------------- internals ------------------------------------- #
     def _build_body(self, user_kwargs: dict) -> dict:
         req = SearchRequest(
-            provider=self.provider,
             provider_key=self.provider_key,
             **user_kwargs,
         )
