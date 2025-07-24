@@ -10,13 +10,13 @@
 
 ## ✨ Features
 
-|                            |                                                                                      |
-| -------------------------- | ------------------------------------------------------------------------------------ |
-| 🗂 **Multi‑provider**      | Seamlessly speak to OpenAI, Anthropic (Claude), Gemini, DeepSeek, or Groq models ✨   |
-| 🔄 **Sync & Async**        | Choose the style that fits your stack – both are first‑class citizens                |
-| ⏱ **Streaming**            | Get partial chunks via Server‑Sent Events; perfect for chat UIs                      |
+|                            |                                                                                    |
+| -------------------------- | ---------------------------------------------------------------------------------- |
+| 🗂 **Multi‑provider**      | Seamlessly speak to OpenAI, DeepSeek, or Groq models ✨   |
+| 🔄 **Sync & Async**        | Choose the style that fits your stack – both are first‑class citizens              |
+| ⏱ **Streaming**            | Get partial chunks via Server‑Sent Events; perfect for chat UIs                    |
 | 🛡 **Elegant error model** | `InvalidRequest`, `ProviderError`, `RateLimitError`, … – catch exactly what you need |
-| 🔌 **Dependency‑light**    | Only `httpx` and `pydantic` at runtime                                               |
+| 🔌 **Dependency‑light**    | Only `httpx` and `pydantic` at runtime                                             |
 
 ---
 
