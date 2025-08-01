@@ -23,6 +23,7 @@ class SearchRequest(BaseModel):
     temperature: float = 0.7
     domain_filter: Optional[List[str]] = None
     max_queries: int = 1
+    search_context_size: Literal["low", "medium", "high"] = "medium"
 
 
 class SimplifiedSearchResponse(BaseModel):
