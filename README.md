@@ -1,47 +1,60 @@
-# LLMLayer Python SDK
+# LLMLayer Python SDK (v0.2.0)
 
-![PyPI](https://img.shields.io/pypi/v/llmlayer?color=blue) ![Python](https://img.shields.io/pypi/pyversions/llmlayer.svg)
-
-> **Search – Reason – Cite** with one function call.
+> **Search → Reason → Cite** with one call.
 >
-> This library is the *official* Python interface for the [LLMLayer Search & Answer API](https://llmlayer.ai).
+> Official Python client for the **LLMLayer Search & Answer API**.
 
 ---
 
-## ✨ Features
+## Table of Contents
 
-|                            |                                                                                    |
-| -------------------------- | ---------------------------------------------------------------------------------- |
-| 🗂 **Multi‑provider**      | Seamlessly speak to OpenAI, DeepSeek, or Groq models ✨   |
-| 🔄 **Sync & Async**        | Choose the style that fits your stack – both are first‑class citizens              |
-| ⏱ **Streaming**            | Get partial chunks via Server‑Sent Events; perfect for chat UIs                    |
-| 🛡 **Elegant error model** | `InvalidRequest`, `ProviderError`, `RateLimitError`, … – catch exactly what you need |
-| 🔌 **Dependency‑light**    | Only `httpx` and `pydantic` at runtime                                             |
-
----
-
-\## Table of Contents
-
+* [Overview](#overview)
+* [Features](#features)
+* [Requirements](#requirements)
 * [Installation](#installation)
-* [Quick Start](#quick-start)
-
-  * [Sync call](#sync-call)
-  * [Async call](#async-call)
-  * [Streaming](#streaming)
+* [Answer API](#answer-api)
+  * [Blocking answer](#blocking-answer)
+  * [Streaming (SSE)](#streaming-sse)
 * [Configuration](#configuration)
-
-  * [Environment Variables](#environment-variables)
-* [API Reference](#api-reference)
-
-  * [`LLMLayerClient`](#llmlayerclient)
-  * [Data Models](#data-models)
-* [Error Handling](#error-handling)
-* [Advanced Usage](#advanced-usage)
-
-  * [Re‑using `httpx` clients](#re-using-httpx-clients)
-  * [Proxies & Timeouts](#proxies--timeouts)
-* [Development](#development)
+* [API Reference](#api-reference)
+  * [Client](#class-llmlayerclient)
+  * [Core Methods](#core-methods)
+  * [Answer Parameters](#answer-parameters)
+  * [Streaming Events](#streaming-events)
+  * [Errors](#errors)
+  * [Models (Types)](#models-types)
+* [Utilities](#utilities)
+  * [YouTube Transcript](#youtube-transcript)
+  * [PDF Content](#pdf-content)
+  * [Scrape](#scrape)
+  * [Web Search](#web-search)
+* [Advanced Tips](#advanced-tips)
+* [Version & Changelog](#version--changelog)
 * [License](#license)
+* [Support](#support)
+
+---
+
+## Overview
+
+**LLMLayer** combines web search, context building, and LLM reasoning in a single API. This SDK provides a clean interface with **sync/async parity**, robust **SSE streaming**, and **utility endpoints** for transcripts, scraping, PDF extraction, and vertical web search.
+
+---
+
+## Features
+
+* **Clean API** – `answer()` and `stream_answer()` match the backend contract.
+* **Async parity** – `answer_async()` and `stream_answer_async()` with the same params.
+* **Rich utilities** – YouTube transcripts, PDF extraction, universal scrape (markdown/html/pdf/screenshot), and web search (general/news/images/videos/shopping/scholar).
+* **Typed errors** – Clear exceptions for auth, validation, rate limits, provider failures.
+* **Lightweight** – Only `httpx` + `pydantic` at runtime.
+* **HTTP/1.1 only** – No HTTP/2 dependency.
+
+---
+
+## Requirements
+
+* **Python ≥ 3.9**
 
 ---
 
@@ -51,200 +64,443 @@
 pip install llmlayer
 ```
 
-> **Python ≥ 3.9** is required.
-
 ---
 
-## Quick Start
+## Answer API
 
-###  Sync call
+### Blocking answer
 
 ```python
 from llmlayer import LLMLayerClient
 
 client = LLMLayerClient(
-    api_key="<LLMLAYER_API_KEY>",          # Bearer token
+    api_key="<LLMLAYER_API_KEY>",
 )
 
-resp = client.search(
+resp = client.answer(
     query="Why is the sky blue?",
     model="openai/gpt-4.1-mini",
     return_sources=True,
 )
 
 print(resp.llm_response)
-for src in resp.sources:
-    print(src["title"], src["link"])
+print("sources:", len(resp.sources))
+print("latency (s):", resp.response_time)
 ```
 
-###  Async call
-
-```python
-import asyncio
-from llmlayer import LLMLayerClient
-
-async def main():
-    client = LLMLayerClient(
-        api_key="<LLMLAYER_KEY>",
-    )
-    resp = await client.asearch(
-        query="List three applications of quantum tunnelling",
-        model="groq/kimi-k2",
-    )
-    print(resp.llm_response)
-
-asyncio.run(main())
-```
-
-###  Streaming
+### Streaming (SSE)
 
 ```python
 from llmlayer import LLMLayerClient
 
-client = LLMLayerClient(
-    api_key="LLMLAYER_API_KEY",
-)
+client = LLMLayerClient(api_key="<LLMLAYER_API_KEY>")
 
-for event in client.search_stream(
-    query="Explain brown dwarfs in two paragraphs",
-    model="openai/o3",
+for event in client.stream_answer(
+    query="Explain brown dwarfs in two short paragraphs",
+    model="openai/gpt-4.1-mini",
     return_sources=True,
 ):
-    if event["type"] == "llm":
+    t = event.get("type")
+    if t == "llm":
         print(event["content"], end="", flush=True)
-    elif event["type"] == "sources":
-        print("\nSources:", event["data"])
-    elif event["type"] == "done":
-        print(f"\n✓ finished in {event['response_time']} s")
+    elif t == "sources":
+        print("\n[SOURCES]", len(event.get("data", [])))
+    elif t == "images":
+        print("\n[IMAGES]", len(event.get("data", [])))
+    elif t == "usage":
+        print("\n[USAGE]", event)
+    elif t == "done":
+        print("\n✓ finished in", event.get("response_time"), "s")
 ```
 
----
-
-##  Configuration
-
-###  Environment Variables
-
-| Variable                | Purpose                                                 | Fallback if unset                       |
-|-------------------------|---------------------------------------------------------| --------------------------------------- |
-| `LLMLAYER_API_KEY`      | Bearer token sent as `Authorization: Bearer …`          | *required*                              |
-| `LLMLAYER_PROVIDER_KEY`    | OPTIONAL : Provider‑specific key, e.g. `OPENAI_API_KEY` | *required unless passed to constructor* |
-
-All constructor args override env vars.
+> **Note:** Streaming **does not** support `answer_type="json"` (structured output). Use blocking `answer()` with `json_schema` for JSON responses.
 
 ---
 
-##  API Reference
+## Configuration
 
-###  `LLMLayerClient`
+You can pass options to the constructor or via environment variables (constructor wins):
 
-| Parameter      | Type                     | Default  | Description                       |
-| -------------- | ------------------------ |----------| --------------------------------- |
-| `api_key`      | `str`                    |  —       | LLMLayer bearer token (mandatory) |
-| `timeout`      | `float \| httpx.Timeout` | `60.0`   | Request timeout                   |
-| `client`       | `httpx.Client \| None`   | `None`   | Inject your own `httpx` client    |
+| Variable | Purpose |
+|----------|---------|
+| `LLMLAYER_API_KEY` | **Required.** Sent as `Authorization: Bearer <key>` |
 
-####  Methods
+**Constructor options**
 
-| Method                     | Description                                |
-| -------------------------- | ------------------------------------------ |
-| `search(**params)`         | Blocking call → `SimplifiedSearchResponse` |
-| `search_stream(**params)`  | Generator yielding SSE events              |
-| `asearch(**params)`        | `async` version of `search`                |
-| `asearch_stream(**params)` | `async` generator                          |
-
----
-
-
-###  Search parameters
-
-Below keys map 1‑to‑1 to the backend’s `SearchRequest` schema.
-
-| Name                  | Type                             | Default     | Notes                                                                                                    |
-|-----------------------|----------------------------------|-------------|----------------------------------------------------------------------------------------------------------|
-| `query`               | `str`                            | —           | User question / search prompt                                                                            |
-| `model`               | `str`                            | —           | Provider model name (`gpt-4o-mini`, `claude‑3‑sonnet‑20240229`, …)                                       |
-| `date_context`        | `str?`                           | `None`      | Inject a date string the prompt can reference                                                            |
-| `location`            | `str`                            | `"us"`      | Geographical search bias                                                                                 |
-| `system_prompt`       | `str?`                           |  —          | Override LLMLayer’s default prompt                                                                       |
-| `provider_key`        | `str?`                           | `None`      | your choosen model provider api key, if you want to be charged directly by your provider for model usage |
-| `response_language`   | `str`                            | `"auto"`    | `"auto"` to detect user language                                                                         |
-| `answer_type`         | `"markdown" \| "html" \| "json"` | `markdown`  | Output format                                                                                            |
-| `search_type`         | `"general" \| "news"`            | `general`   | Vertical search bias                                                                                     |
-| `json_schema`         | `str?`                           |  —          | Required when `answer_type = json` json schema the response should follow                                |
-| `citations`           | `bool`                           | `False`     | Embed `[n]` citations into answer                                                                        |
-| `return_sources`      | `bool`                           | `False`     | Include `sources` in response                                                                            |
-| `return_images`       | `bool`                           | `False`     | Include `images` (if available)                                                                          |
-| `date_filter`         | `str`                            | `"anytime"` | `hour`, `day`, `week`, `month`, `year`                                                                   |
-| `max_tokens`          | `int`                            | `1500`      | LLM max tokens                                                                                           |
-| `temperature`         | `float`                          | `0.7`       | Adjust creativity                                                                                        |
-| `domain_filter`       | `List[str]?`                     |  —          | list of domains `["nytimes.com","-wikipedia.org]` `-` to exclude a domain from the search                |
-| `max_queries`         | `int`                            | `1`         | How many search queries LLMLayer should generate. each query will cost 0,007$                            |
-| `search_context_size` | `str?`                           | `medium`    | values : `low` `medium` `high`                                                                            |
+* `base_url` (default `https://api.llmlayer.dev`) — point to local/dev if needed.
+* `timeout` — default 60s.
+* `client` / `async_client` — reuse your own `httpx` clients (headers injected).
+* `extra_headers` — merged on top of Authorization & User-Agent.
 
 
 ---
 
-###  Data Models
+## API Reference
+
+### `class LLMLayerClient`
+
+**Constructor**
 
 ```python
-from llmlayer.models import SearchRequest, SimplifiedSearchResponse
-```
-
-Both are `pydantic.BaseModel` subclasses – perfect for validation, FastAPI, or serialization.
-
----
-
-##  Error Handling
-
-All exceptions inherit from `llmlayer.exceptions.LLMLayerError`.
-
-| Class                 | Raised When                                    |
-| --------------------- | ---------------------------------------------- |
-| `InvalidRequest`      | Bad request parameters (400)                   |
-| `AuthenticationError` | Missing/invalid LLMLayer or provider key (401) |
-| `RateLimitError`      | Provider 429 errors                            |
-| `InternalServerError` | LLMLayer 5xx                                   |
-
-Example:
-
-```python
-from llmlayer.exceptions import RateLimitError
-
-try:
-    resp = client.search(...)
-except RateLimitError:
-    backoff_and_retry()
-```
-
----
-
-##  Advanced Usage
-
-###  Re‑using `httpx` clients
-
-```python
-import httpx
-from llmlayer import LLMLayerClient
-
-shared = httpx.Client(http2=True, timeout=60)
-client = LLMLayerClient(
-    api_key="...",
-    client=shared,
+LLMLayerClient(
+    api_key: str | None = None,
+    base_url: str = "https://api.llmlayer.dev",
+    timeout: float | httpx.Timeout = 60.0,
+    client: httpx.Client | None = None,
+    async_client: httpx.AsyncClient | None = None,
+    extra_headers: dict[str, str] | None = None,
 )
 ```
 
-###  Proxies & Timeouts
+### Core Methods
 
 ```python
-transport = httpx.HTTPTransport(proxy="https://proxy.corp:3128")
-custom = httpx.Client(timeout=10, transport=transport)
-client = LLMLayerClient(..., client=custom)
+answer(**params) -> SimplifiedSearchResponse
+stream_answer(**params) -> typing.Generator[dict, None, None]
+answer_async(**params) -> SimplifiedSearchResponse
+stream_answer_async(**params) -> typing.AsyncGenerator[dict, None]
+```
+
+### Answer Parameters
+
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `query` | `str` | — | **Required.** The user's question/instruction. |
+| `model` | `str` | — | **Required.** Provider model id, e.g. `openai/gpt-4.1-mini`. |
+| `location` | `str` | `"us"` | Geo bias used by search. |
+| `system_prompt` | `str \| None` | `None` | Custom system prompt for non-JSON answers. |
+| `response_language` | `str` | `"auto"` | Autodetect output language or force a specific language code. |
+| `answer_type` | `"markdown" \| "html" \| "json"` | `"markdown"` | Output format. **If `"json"`, you must also pass `json_schema`. Not supported by streaming.** |
+| `search_type` | `"general" \| "news"` | `"general"` | Search vertical/bias for the context builder. (For other verticals, use `search_web`.) |
+| `json_schema` | `str \| dict \| None` | `None` | **Required when `answer_type="json"`.** You may pass a `dict`; the client will JSON-serialize it. |
+| `citations` | `bool` | `False` | If `True`, embed citation markers (e.g., `[1]`) in the answer body. |
+| `return_sources` | `bool` | `False` | Include aggregated `sources` in the final response (and emit a `sources` event during streaming). |
+| `return_images` | `bool` | `False` | Include `images` in the final response (and emit an `images` event during streaming). |
+| `date_filter` | `"hour" \| "day" \| "week" \| "month" \| "year" \| "anytime"` | `"anytime"` | Recency bias for search. |
+| `max_tokens` | `int` | `1500` | Maximum output tokens from the LLM. |
+| `temperature` | `float` | `0.7` | Sampling temperature (creativity). |
+| `domain_filter` | `list[str] \| None` | `None` | Domain constraints (include `['nature.com']`, exclude with `['-wikipedia.org']`). |
+| `max_queries` | `int` | `1` | How many search sub-queries the router should generate. |
+| `search_context_size` | `"low" \| "medium" \| "high"` | `"medium"` | Controls how much context is aggregated before hitting the LLM. |
+
+### Streaming Events
+
+Your server emits JSON frames over SSE (`content-type: text/event-stream`). Possible events:
+
+| `type` | Payload keys | Meaning |
+|--------|--------------|---------|
+| `llm` | `content: str` | Partial LLM text |
+| `sources` | `data: list[dict]` | Aggregated sources |
+| `images` | `data: list[dict]` | Image results |
+| `usage` | `input_tokens: int`, `output_tokens: int`, `model_cost: float \| None`, `llmlayer_cost: float` | Token/cost summary |
+| `done` | `response_time: str` | Completion signal |
+| `error` | `error: str` | Error frame (raises) |
+
+The SDK's streaming helpers handle multi-line `data:` chunks, `[DONE]` sentinels, and early error frames.
+
+### Errors
+
+All exceptions inherit from `llmlayer.exceptions.LLMLayerError`:
+
+* `InvalidRequest` — 400 (missing/invalid params; early SSE errors like `missing_model`)
+* `AuthenticationError` — 401/403 (missing/invalid LLMLayer key)
+* `RateLimitError` — 429
+* `ProviderError` — upstream LLM provider errors (mapped by the backend)
+* `InternalServerError` — 5xx from LLMLayer
+
+**Example**
+
+```python
+from llmlayer import LLMLayerClient
+from llmlayer.exceptions import AuthenticationError, InvalidRequest
+
+client = LLMLayerClient(api_key="...")
+
+try:
+    resp = client.answer(query="explain kv cache", model="openai/gpt-4.1-mini")
+except AuthenticationError as e:
+    print("Auth failed:", e)
+except InvalidRequest as e:
+    print("Bad params:", e)
+```
+
+### Models (Types)
+
+```python
+class SimplifiedSearchResponse(BaseModel):
+    llm_response: str | dict
+    response_time: float | str  # e.g., "1.23"
+    input_tokens: int
+    output_tokens: int
+    sources: list[dict] = []
+    images: list[dict] = []
+    model_cost: float | None = None
+    llmlayer_cost: float | None = None
+
+class YTResponse(BaseModel):
+    transcript: str
+    url: str
+    cost: float | None
+    language: str | None
+
+class PDFResponse(BaseModel):
+    text: str
+    pages: int
+    url: str
+    status_code: int
+    cost: float | None
+
+class ScraperResponse(BaseModel):
+    markdown: str
+    html: str | None
+    pdf_data: str | None          # base64
+    screenshot_data: str | None   # base64
+    url: str
+    status_code: int
+    cost: float | None
+
+class WebSearchResponse(BaseModel):
+    results: list[dict]
+    cost: float | None
 ```
 
 ---
 
+## Utilities
 
+### YouTube Transcript
 
-##  License
+**Endpoint:** `POST /api/v1/youtube_transcript`  
+**Purpose:** Fetches the transcript of a YouTube video (optionally in a specified language).
 
-MIT © 2025 LLMLayer Inc.
+**Signature**
+
+```python
+# Sync
+get_youtube_transcript(url: str, *, language: str | None = None) -> YTResponse
+
+# Async
+get_youtube_transcript_async(url: str, *, language: str | None = None) -> YTResponse
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `url` | `str` | — | **Required.** Full YouTube video URL. |
+| `language` | `str \| None` | `None` | Optional BCP-47 language code (e.g., `"en"`). |
+
+**Returns (`YTResponse`)**
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `transcript` | `str` | Full transcript text. |
+| `url` | `str` | Echo of the input URL. |
+| `cost` | `float \| None` | Cost charged (USD). |
+| `language` | `str \| None` | Language actually used. |
+
+**Example**
+
+```python
+yt = client.get_youtube_transcript("https://www.youtube.com/watch?v=dQw4w9WgXcQ", language="en")
+print(yt.transcript[:200])
+```
+
+---
+
+### PDF Content
+
+**Endpoint:** `POST /api/v1/get_pdf_content`  
+**Purpose:** Extracts text from a public PDF URL and reports page count.
+
+**Signature**
+
+```python
+# Sync
+get_pdf_content(url: str) -> PDFResponse
+
+# Async
+get_pdf_content_async(url: str) -> PDFResponse
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `url` | `str` | — | **Required.** Public direct PDF URL. |
+
+**Returns (`PDFResponse`)**
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `text` | `str` | Extracted PDF text (concatenated). |
+| `pages` | `int` | Total pages. |
+| `url` | `str` | Canonical URL. |
+| `status_code` | `int` | HTTP status from the scrape (usually 200). |
+| `cost` | `float \| None` | Cost charged (USD). |
+
+**Example**
+
+```python
+pdf = client.get_pdf_content("https://arxiv.org/pdf/2203.15556.pdf")
+print(pdf.pages, pdf.text[:300])
+```
+
+---
+
+### Scrape
+
+**Endpoint:** `POST /api/v1/scrape`  
+**Purpose:** Scrapes a URL into one of several formats.
+
+**Signature**
+
+```python
+# Sync
+scrape(url: str, *, format: Literal['markdown','html','pdf','screenshot'] = 'markdown',
+       include_images: bool = True, include_links: bool = True) -> ScraperResponse
+
+# Async
+scrape_async(url: str, *, format: Literal['markdown','html','pdf','screenshot'] = 'markdown',
+             include_images: bool = True, include_links: bool = True) -> ScraperResponse
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `url` | `str` | — | **Required.** Public URL to scrape. |
+| `format` | `"markdown" \| "html" \| "pdf" \| "screenshot"` | `"markdown"` | Output format. |
+| `include_images` | `bool` | `True` | For markdown, inline images where possible. |
+| `include_links` | `bool` | `True` | For markdown, preserve hyperlinks. |
+
+**Returns (`ScraperResponse`)**
+
+| Field | Type | Populated when |
+|-------|------|---------------|
+| `markdown` | `str` | `format='markdown'` |
+| `html` | `str \| None` | `format='html'` |
+| `pdf_data` | `str \| None` | `format='pdf'` — base64 PDF bytes |
+| `screenshot_data` | `str \| None` | `format='screenshot'` — base64 PNG bytes |
+| `url` | `str` | Always |
+| `status_code` | `int` | Always |
+| `cost` | `float \| None` | Always |
+
+**Examples**
+
+```python
+# Markdown
+md = client.scrape("https://example.com", format="markdown")
+print(md.markdown[:300])
+
+# HTML
+html = client.scrape("https://example.com", format="html")
+print(bool(html.html))
+
+# PDF → write to disk
+pdf = client.scrape("https://example.com", format="pdf")
+import base64, pathlib
+pathlib.Path("page.pdf").write_bytes(base64.b64decode(pdf.pdf_data or ""))
+
+# Screenshot → write to disk
+shot = client.scrape("https://example.com", format="screenshot")
+pathlib.Path("screenshot.png").write_bytes(base64.b64decode(shot.screenshot_data or ""))
+```
+
+---
+
+### Web Search
+
+**Endpoint:** `POST /api/v1/web_search`  
+**Purpose:** Direct access to vertical search indices without invoking the full Answer pipeline.
+
+**Signature**
+
+```python
+# Sync
+search_web(query: str, *, search_type: Literal['general','news','shopping','videos','images','scholar'] = 'general',
+           location: str = 'us', recency: str | None = None, 
+           domain_filter: list[str] | None = None) -> WebSearchResponse
+
+# Async
+search_web_async(query: str, *, search_type: Literal['general','news','shopping','videos','images','scholar'] = 'general',
+                 location: str = 'us', recency: str | None = None, 
+                 domain_filter: list[str] | None = None) -> WebSearchResponse
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `query` | `str` | — | **Required.** The search query. |
+| `search_type` | `"general" \| "news" \| "shopping" \| "videos" \| "images" \| "scholar"` | `"general"` | Search vertical. |
+| `location` | `str` | `"us"` | Geo/market bias. |
+| `recency` | `"hour" \| "day" \| "week" \| "month" \| "year" \| None` | `None` | Recency filter. |
+| `domain_filter` | `list[str] \| None` | `None` | Include/exclude domains (prefix with `-` to exclude). |
+
+**Returns (`WebSearchResponse`)**
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `results` | `list[dict]` | Items with fields appropriate to the vertical (e.g., `title`, `url`, `snippet`). |
+| `cost` | `float \| None` | Cost charged (USD). Shopping has higher cost tier. |
+
+**Examples**
+
+```python
+# General search, exclude Wikipedia
+general = client.search_web("vector databases", domain_filter=["-wikipedia.org"])
+print(len(general.results))
+
+# Recent news
+news = client.search_web("ai agents", search_type="news", recency="day")
+print(news.results[0] if news.results else None)
+
+# Images
+images = client.search_web("james webb telescope", search_type="images")
+print(images.results[:3])
+
+    
+# Scholar
+scholar = client.search_web("transformer models", search_type="scholar")
+print(scholar.results[0] if scholar.results else None)
+
+# Shopping
+shopping = client.search_web("iphone 17", search_type="shopping")
+print(shopping.results[0] if shopping.results else None)
+```
+
+---
+
+## Advanced Tips
+
+* **`json_schema`**: You can pass a Python `dict`; the client serializes it for `answer_type="json"` (remember: **not** streamable).
+* **Domain filters**: Include `["example.com"]`, exclude with a leading dash `["-wikipedia.org"]`.
+* **Per-call overrides**: You can override `timeout` and add `headers={"X-Debug":"1"}` on any call.
+* **Reusing `httpx` clients**: Inject an existing `httpx.Client`/`AsyncClient` to share connection pools across your app.
+* **Context managers**: `with LLMLayerClient(...) as client:` closes owned clients automatically.
+
+---
+
+## Version & Changelog
+
+**0.2.0**
+
+* Utilities now **POST** JSON bodies: `/youtube_transcript`, `/get_pdf_content`, `/scrape`, `/web_search`.
+* `scrape` unified for markdown/html/pdf/screenshot (no separate helpers).
+* `web_search` returns `{ results, cost }`.
+* Streaming rejects `answer_type="json"` to match server behavior; better early SSE error handling.
+
+---
+
+## License
+
+MIT © 2025 LLMLayer Inc.
+
+---
+
+## Support
+
+* **Issues & feature requests**: open a ticket on GitHub.
+* For private support, contact **[support@llmlayer.ai](mailto:support@llmlayer.ai)**.
