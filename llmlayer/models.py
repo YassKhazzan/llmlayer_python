@@ -1,48 +1,53 @@
-from typing import List, Optional, Union, Literal
-from pydantic import BaseModel, Field
+from __future__ import annotations
 
+from typing import List, Optional, Union, Literal, Dict, Any
+from pydantic import BaseModel, Field, HttpUrl
 
 # ================================
-# Core Search API
+# Core Answer API (v2)
 # ================================
 
 class SearchRequest(BaseModel):
     # REQUIRED
     query: str
     model: str
-    # Backend fields (kept as plain strings for forward-compat)
+
+    # Backend fields
     provider_key: Optional[str] = None
     location: str = "us"
     system_prompt: Optional[str] = None
     response_language: str = "auto"
     answer_type: str = "markdown"          # "markdown" | "html" | "json"
-    search_type: str = "general"            # e.g. "general", "news"
-    json_schema: Optional[Union[str, dict]] = None  # dict allowed; client will JSON-serialize
+    search_type: str = "general"           # e.g., "general", "news"
+    # Backend expects string; client may serialize dict for convenience
+    json_schema: Optional[Union[str, Dict[str, Any]]] = None
+
     citations: bool = False
     return_sources: bool = False
     return_images: bool = False
-    date_filter: str = "anytime"            # "hour" | "day" | "week" | "month" | "year" | "anytime"
+
+    date_filter: str = "anytime"           # "hour" | "day" | "week" | "month" | "year" | "anytime"
     max_tokens: int = 1500
     temperature: float = 0.7
     domain_filter: Optional[List[str]] = None
     max_queries: int = 1
-    search_context_size: str = "medium"     # passthrough to backend
+    search_context_size: str = "medium"
 
 
-class SimplifiedSearchResponse(BaseModel):
-    llm_response: Union[str, dict]
-    # Server returns formatted string like "1.23"; accept float too
+class AnswerResponse(BaseModel):
+    # v2 returns 'answer' instead of 'llm_response'
+    answer: Union[str, Dict[str, Any]]
     response_time: Union[float, str]
     input_tokens: int
     output_tokens: int
-    sources: List[dict] = Field(default_factory=list)
-    images: List[dict] = Field(default_factory=list)
+    sources: List[Dict[str, Any]] = Field(default_factory=list)
+    images: List[Dict[str, Any]] = Field(default_factory=list)
     model_cost: Optional[float] = None
     llmlayer_cost: Optional[float] = None
 
 
 # ================================
-# Utilities — YouTube Transcript
+# Utilities — YouTube Transcript (v2 adds metadata)
 # ================================
 
 class YTRequest(BaseModel):
@@ -53,6 +58,12 @@ class YTRequest(BaseModel):
 class YTResponse(BaseModel):
     transcript: str
     url: str
+    title: Optional[str] = None
+    description: Optional[str] = None
+    author: Optional[str] = None
+    views: Optional[int] = None
+    likes: Optional[int] = None
+    date: Optional[str] = None
     cost: Optional[float] = None
     language: Optional[str] = None
 
@@ -67,31 +78,33 @@ class PDFRequest(BaseModel):
 
 class PDFResponse(BaseModel):
     text: str
-    pages: int
+    pages: Optional[int]
     url: str
-    status_code: int
+    statusCode: Optional[int]
     cost: Optional[float] = None
 
 
 # ================================
-# Utilities — Scrape (markdown/html/pdf/screenshot)
+# Utilities — Scrape (v2: multi-format request & fields)
 # ================================
 
 class ScrapeRequest(BaseModel):
     url: str
+    formats: List[Literal["markdown", "html", "screenshot", "pdf"]]
     include_images: bool = True
     include_links: bool = True
-    format: Literal["markdown", "html", "screenshot", "pdf"] = "markdown"
 
 
 class ScraperResponse(BaseModel):
     markdown: str
     html: Optional[str] = None
-    pdf_data: Optional[str] = None         # base64 encoded
-    screenshot_data: Optional[str] = None  # base64 encoded
+    pdf: Optional[str] = None          # base64 encoded
+    screenshot: Optional[str] = None   # base64 encoded
     url: str
-    status_code: int
+    title: Optional[str] = None
+    statusCode: int                    # v2 uses camelCase
     cost: Optional[float] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 # ================================
@@ -102,10 +115,79 @@ class WebSearchRequest(BaseModel):
     query: str
     search_type: Literal["general", "news", "shopping", "videos", "images", "scholar"] = "general"
     location: str = "us"
-    recency: Optional[str] = None          # "hour" | "day" | "week" | "month" | "year"
-    domain_filter: Optional[List[str]] = None  # e.g., ["example.com", "-blocked.com"]
+    recency: Optional[str] = None
+    domain_filter: Optional[List[str]] = None
 
 
 class WebSearchResponse(BaseModel):
-    results: List[dict]
+    results: List[Dict[str, Any]]
+    cost: Optional[float] = None
+
+
+# ================================
+# Map endpoint (v2: statusCode)
+# ================================
+
+class MapRequest(BaseModel):
+    url: HttpUrl
+    ignoreSitemap: bool = False
+    includeSubdomains: bool = False
+    search: Optional[str] = None
+    limit: int = 5000
+    timeout: Optional[int] = 15000  # milliseconds
+
+
+class MapLink(BaseModel):
+    url: HttpUrl
+    title: str
+
+
+class MapResponse(BaseModel):
+    links: List[MapLink]
+    statusCode: int
+    cost: Optional[float] = None
+
+
+# ================================
+# Crawl (v2 request + event stream frames)
+# ================================
+
+class CrawlRequest(BaseModel):
+    url: HttpUrl
+    max_pages: int = 25
+    max_depth: int = 2
+    timeout: Optional[float] = 60.0
+    include_subdomains: bool = False
+    include_links: bool = True
+    include_images: bool = True
+    formats: List[Literal["markdown", "html", "screenshot", "pdf"]] = ["markdown"]
+
+
+# Optional JSON response models if you later expose a non-streaming crawl endpoint:
+
+class CrawlResultItem(BaseModel):
+    requested_url: str
+    final_url: str
+    title: str
+    hash_sha256: str
+    markdown: Optional[str] = None
+    html: Optional[str] = None
+    screenshot: Optional[str] = None  # base64
+    pdf: Optional[str] = None         # base64
+    success: Optional[bool] = None
+    error: Optional[str] = None
+
+
+class CrawlResponse(BaseModel):
+    seeds: List[str]
+    fetched: int
+    visited: int
+    max_pages: int
+    max_depth: int
+    results: List[CrawlResultItem]
+    graph: Dict[str, List[str]]
+    errors: List[Dict[str, Any]]
+    billing: Dict[str, Any]
+    partial: Optional[bool] = None
+    status_code: int
     cost: Optional[float] = None

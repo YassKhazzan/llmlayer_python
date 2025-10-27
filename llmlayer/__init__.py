@@ -1,6 +1,6 @@
 from ._version import __version__
 from .client import LLMLayerClient
-from .models import SearchRequest, SimplifiedSearchResponse
+from .models import SearchRequest
 from .exceptions import (
     LLMLayerError,
     InvalidRequest,
@@ -14,7 +14,6 @@ __all__ = [
     "__version__",
     "LLMLayerClient",
     "SearchRequest",
-    "SimplifiedSearchResponse",
     "LLMLayerError",
     "InvalidRequest",
     "AuthenticationError",
