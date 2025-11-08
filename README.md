@@ -492,7 +492,7 @@ client = LLMLayerClient()
 # Request multiple outputs in one call
 r = client.scrape(
     url="https://example.com",
-    formats=["markdown", "html"], # can also request "screenshot", "pdf"
+    formats=["markdown", "html"], # can also request "screenshot"
     include_images=True,
     include_links=True,
 )
@@ -553,6 +553,8 @@ for f in client.crawl_stream(
     max_depth=1,
     timeout_seconds=30,
     formats=["markdown"],
+    main_content_only=False,
+    advanced_proxy=False,
 ):
     if f.get("type") == "page":
         p = f.get("page", {})

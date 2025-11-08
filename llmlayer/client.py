@@ -78,6 +78,8 @@ def _class_for_status(status_code: int) -> type[LLMLayerError]:
         return InvalidRequest
     if status_code in (401, 403):
         return AuthenticationError
+    if status_code in (408, 504):
+        return InternalServerError
     if status_code == 429:
         return RateLimitError
     if status_code >= 500:
@@ -336,6 +338,8 @@ class LLMLayerClient:
         formats: Iterable[str] = ("markdown",),   # 'markdown' | 'html' | 'screenshot' | 'pdf'
         include_images: bool = True,
         include_links: bool = True,
+        advanced_proxy: bool = False,
+        main_content_only: bool = False,
         timeout: float | httpx.Timeout | None = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> ScraperResponse:
@@ -344,6 +348,8 @@ class LLMLayerClient:
             formats=list(formats),
             include_images=include_images,
             include_links=include_links,
+            advanced_proxy = advanced_proxy,
+            main_content_only = main_content_only,
         ).model_dump()
         r = self._client.post(
             f"{self.base_url}/api/v2/scrape",
@@ -387,7 +393,7 @@ class LLMLayerClient:
         include_subdomains: bool = False,
         search: Optional[str] = None,
         limit: int = 5000,
-        timeout_ms: Optional[int] = 15000,
+        timeout_ms: Optional[int] = 45000,
         timeout: float | httpx.Timeout | None = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> MapResponse:
@@ -417,6 +423,8 @@ class LLMLayerClient:
         include_subdomains: bool = False,
         include_links: bool = True,
         include_images: bool = True,
+        advanced_proxy: bool = False,
+        main_content_only: bool = False,
         formats: Iterable[str] = ("markdown",),
         timeout: float | httpx.Timeout | None = None,
         headers: Optional[Dict[str, str]] = None,
@@ -433,6 +441,8 @@ class LLMLayerClient:
             include_subdomains=include_subdomains,
             include_links=include_links,
             include_images=include_images,
+            advanced_proxy=advanced_proxy,
+            main_content_only=main_content_only,
             formats=list(formats),
         ).model_dump(mode="json", exclude_none=True)
 
@@ -516,6 +526,8 @@ class LLMLayerClient:
         formats: Iterable[str] = ("markdown",),
         include_images: bool = True,
         include_links: bool = True,
+        advanced_proxy: bool = False,
+        main_content_only: bool = False,
         timeout: float | httpx.Timeout | None = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> ScraperResponse:
@@ -524,6 +536,8 @@ class LLMLayerClient:
             formats=list(formats),
             include_images=include_images,
             include_links=include_links,
+            advanced_proxy=advanced_proxy,
+            main_content_only = main_content_only,
         ).model_dump()
         async with self._get_async_client() as ac:
             r = await ac.post(
@@ -569,7 +583,7 @@ class LLMLayerClient:
         include_subdomains: bool = False,
         search: Optional[str] = None,
         limit: int = 5000,
-        timeout_ms: Optional[int] = 15000,
+        timeout_ms: Optional[int] = 45000,
         timeout: float | httpx.Timeout | None = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> MapResponse:
@@ -600,6 +614,8 @@ class LLMLayerClient:
         include_subdomains: bool = False,
         include_links: bool = True,
         include_images: bool = True,
+        advanced_proxy: bool = False,
+        main_content_only: bool = False,
         formats: Iterable[str] = ("markdown",),
         timeout: float | httpx.Timeout | None = None,
         headers: Optional[Dict[str, str]] = None,
@@ -612,6 +628,8 @@ class LLMLayerClient:
             include_subdomains=include_subdomains,
             include_links=include_links,
             include_images=include_images,
+            advanced_proxy=advanced_proxy,
+            main_content_only=main_content_only,
             formats=list(formats),
         ).model_dump(mode="json", exclude_none=True)
 

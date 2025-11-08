@@ -17,8 +17,8 @@ class SearchRequest(BaseModel):
     location: str = "us"
     system_prompt: Optional[str] = None
     response_language: str = "auto"
-    answer_type: str = "markdown"          # "markdown" | "html" | "json"
-    search_type: str = "general"           # e.g., "general", "news"
+    answer_type: Literal["markdown", "html", "json"] = "markdown"
+    search_type: Literal["general", "news"] = "general"
     # Backend expects string; client may serialize dict for convenience
     json_schema: Optional[Union[str, Dict[str, Any]]] = None
 
@@ -26,12 +26,12 @@ class SearchRequest(BaseModel):
     return_sources: bool = False
     return_images: bool = False
 
-    date_filter: str = "anytime"           # "hour" | "day" | "week" | "month" | "year" | "anytime"
+    date_filter: Literal["hour","day","week","month","year","anytime"] = "anytime"           # "hour" | "day" | "week" | "month" | "year" | "anytime"
     max_tokens: int = 1500
     temperature: float = 0.7
     domain_filter: Optional[List[str]] = None
     max_queries: int = 1
-    search_context_size: str = "medium"
+    search_context_size: Literal["low","medium","high"] = "medium"
 
 
 class AnswerResponse(BaseModel):
@@ -93,10 +93,12 @@ class ScrapeRequest(BaseModel):
     formats: List[Literal["markdown", "html", "screenshot", "pdf"]]
     include_images: bool = True
     include_links: bool = True
+    advanced_proxy: Optional[bool] = False
+    main_content_only: Optional[bool] = False
 
 
 class ScraperResponse(BaseModel):
-    markdown: str
+    markdown: Optional[str] = None
     html: Optional[str] = None
     pdf: Optional[str] = None          # base64 encoded
     screenshot: Optional[str] = None   # base64 encoded
@@ -134,7 +136,7 @@ class MapRequest(BaseModel):
     includeSubdomains: bool = False
     search: Optional[str] = None
     limit: int = 5000
-    timeout: Optional[int] = 15000  # milliseconds
+    timeout: Optional[int] = 45000  # milliseconds
 
 
 class MapLink(BaseModel):
@@ -161,6 +163,8 @@ class CrawlRequest(BaseModel):
     include_links: bool = True
     include_images: bool = True
     formats: List[Literal["markdown", "html", "screenshot", "pdf"]] = ["markdown"]
+    advanced_proxy: Optional[bool] = False
+    main_content_only: Optional[bool] = False
 
 
 # Optional JSON response models if you later expose a non-streaming crawl endpoint:
